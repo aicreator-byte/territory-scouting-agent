@@ -36,5 +36,5 @@ jobs:
           path: |
             bps_domains_all.csv
             bps_domains_banten.csv
-            bps_dynamictable_banten.csv
+            bps_dynamictable_all.csv
             bps_dynamictable_relevan.csv
