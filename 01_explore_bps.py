@@ -46,21 +46,22 @@ def main():
     domains.to_csv("bps_domains_all.csv", index=False)
     print(f"\nTotal domain: {len(domains)} (disimpan ke bps_domains_all.csv)")
 
-    # 2. Filter khusus wilayah yang mengandung kata "Banten"
-    print("\n=== Mencari domain terkait Banten ===")
-    name_col = None
+    # 2. Filter khusus wilayah Banten berdasarkan kode domain (36xx)
+    #    Kode 3600=provinsi, 3601-3604=kabupaten, 3671-3674=kota
+    print("\n=== Mencari domain terkait Banten (kode 36xx) ===")
+    id_col = None
     for col in domains.columns:
-        if "name" in col.lower():
-            name_col = col
+        if "id" in col.lower():
+            id_col = col
             break
 
-    if name_col:
-        banten = domains[domains[name_col].str.contains("Banten", case=False, na=False)]
+    if id_col:
+        banten = domains[domains[id_col].astype(str).str.startswith("36")]
         print(banten)
         banten.to_csv("bps_domains_banten.csv", index=False)
-        print(f"\nDitemukan {len(banten)} domain terkait 'Banten' -> disimpan ke bps_domains_banten.csv")
+        print(f"\nDitemukan {len(banten)} domain wilayah Banten -> disimpan ke bps_domains_banten.csv")
     else:
-        print("Kolom nama wilayah tidak ditemukan, cek manual kolom berikut:")
+        print("Kolom id wilayah tidak ditemukan, cek manual kolom berikut:")
         print(domains.columns.tolist())
 
 
