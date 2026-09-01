@@ -1,0 +1,33 @@
+name: Explore BPS Data
+
+# Jalankan manual dari tab "Actions" di GitHub -> pilih workflow ini -> "Run workflow"
+on:
+  workflow_dispatch:
+
+jobs:
+  explore-bps:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install stadata
+
+      - name: Run BPS exploration script
+        env:
+          BPS_TOKEN: ${{ secrets.BPS_TOKEN }}
+        run: python3 01_explore_bps.py
+
+      - name: Upload hasil sebagai artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: bps-domains
+          path: |
+            bps_domains_all.csv
+            bps_domains_banten.csv
