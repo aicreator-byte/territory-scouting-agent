@@ -39,6 +39,11 @@ jobs:
           BPS_TOKEN: ${{ secrets.BPS_TOKEN }}
         run: python3 04_fetch_all_vars_banten.py
 
+      - name: Run BPS fetch vars Jakarta+Depok (tahap 5 - area baru)
+        env:
+          BPS_TOKEN: ${{ secrets.BPS_TOKEN }}
+        run: python3 05_fetch_vars_jakarta_depok.py
+
       - name: Upload hasil sebagai artifact
         uses: actions/upload-artifact@v4
         with:
@@ -52,3 +57,5 @@ jobs:
             bps_var_by_domain_summary.csv
             bps_var_3600_all.csv
             bps_var_3600_relevan.csv
+            bps_var_jakarta_depok_all.csv
+            bps_var_jakarta_depok_relevan.csv
