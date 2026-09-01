@@ -29,6 +29,11 @@ jobs:
           BPS_TOKEN: ${{ secrets.BPS_TOKEN }}
         run: python3 02_list_dynamictable_banten.py
 
+      - name: Run BPS var-by-domain script (tahap 3 - direct API call)
+        env:
+          BPS_TOKEN: ${{ secrets.BPS_TOKEN }}
+        run: python3 03_list_var_by_domain.py
+
       - name: Upload hasil sebagai artifact
         uses: actions/upload-artifact@v4
         with:
@@ -38,3 +43,5 @@ jobs:
             bps_domains_banten.csv
             bps_dynamictable_all.csv
             bps_dynamictable_relevan.csv
+            bps_var_by_domain_raw.json
+            bps_var_by_domain_summary.csv
