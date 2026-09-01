@@ -19,10 +19,15 @@ jobs:
       - name: Install dependencies
         run: pip install stadata
 
-      - name: Run BPS exploration script
+      - name: Run BPS exploration script (tahap 1 - domain)
         env:
           BPS_TOKEN: ${{ secrets.BPS_TOKEN }}
         run: python3 01_explore_bps.py
+
+      - name: Run BPS dynamic table script (tahap 2 - daftar indikator)
+        env:
+          BPS_TOKEN: ${{ secrets.BPS_TOKEN }}
+        run: python3 02_list_dynamictable_banten.py
 
       - name: Upload hasil sebagai artifact
         uses: actions/upload-artifact@v4
@@ -31,3 +36,5 @@ jobs:
           path: |
             bps_domains_all.csv
             bps_domains_banten.csv
+            bps_dynamictable_banten.csv
+            bps_dynamictable_relevan.csv
