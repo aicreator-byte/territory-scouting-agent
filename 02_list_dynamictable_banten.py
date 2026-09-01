@@ -1,9 +1,9 @@
 """
-Territory Scouting Agent - Tahap 2: Cari daftar tabel dinamis untuk Banten
-Tujuan: lihat indikator apa saja (populasi, PDRB, dll) yang tersedia
-di BPS untuk provinsi Banten dan kab/kota di dalamnya.
+Territory Scouting Agent - Tahap 2: Cari indikator (tabel dinamis) relevan
+Tujuan: lihat indikator apa saja (populasi, PDRB, dll) yang tersedia di BPS,
+lalu difilter yang relevan untuk white space scoring.
 
-Kode domain Banten (hasil eksplorasi tahap 1):
+Kode domain Banten (hasil eksplorasi tahap 1, untuk dipakai nanti di tahap 3):
     3600 = Banten (provinsi)
     3601 = Pandeglang (kab)
     3602 = Lebak (kab)
@@ -14,11 +14,16 @@ Kode domain Banten (hasil eksplorasi tahap 1):
     3673 = Serang (kota)
     3674 = Tangerang Selatan (kota)
 
+Catatan: filter list_dynamictable(domain=[...]) sempat menghasilkan 0 baris
+(kemungkinan format kode domain di file referensi package berbeda / tabel
+dinamis didaftarkan di level nasional). Jadi di sini kita ambil SEMUA
+tabel dulu (all=True), baru difilter pakai keyword judul.
+
 Cara pakai:
     1. Set environment variable BPS_TOKEN
     2. Jalankan: python3 02_list_dynamictable_banten.py
-    3. Lihat output CSV untuk cari var_id indikator yang relevan
-       (misal: jumlah penduduk, PDRB, jumlah usaha, dll)
+    3. Lihat bps_dynamictable_relevan.csv untuk cari var_id indikator
+       yang relevan (jumlah penduduk, PDRB, jumlah usaha, dll)
 """
 
 import os
@@ -35,6 +40,8 @@ BPS_TOKEN = os.environ.get("BPS_TOKEN")
 
 BANTEN_DOMAINS = ["3600", "3601", "3602", "3603", "3604", "3671", "3672", "3673", "3674"]
 
+KEYWORDS = ["penduduk", "PDRB", "usaha", "UMKM", "miskin", "pengeluaran", "ekonomi", "industri"]
+
 
 def main():
     if not BPS_TOKEN:
@@ -43,35 +50,37 @@ def main():
 
     client = stadata.Client(BPS_TOKEN)
 
-    print("=== Mengambil daftar tabel dinamis untuk domain provinsi Banten (3600) ===")
-    tables = client.list_dynamictable(domain=["3600"], all=False)
+    print("=== Mengambil SELURUH katalog tabel dinamis (tanpa filter domain) ===")
+    tables = client.list_dynamictable(all=True)
 
-    if tables is None:
-        print("Gagal mengambil data / tidak ada hasil.")
+    if tables is None or len(tables) == 0:
+        print("Gagal mengambil data / tidak ada hasil sama sekali.")
         sys.exit(1)
 
-    print(f"Total tabel dinamis ditemukan: {len(tables)}")
-    print(tables.head(30))
-    tables.to_csv("bps_dynamictable_banten.csv", index=False)
-    print("\nDisimpan ke bps_dynamictable_banten.csv")
+    print(f"Total tabel dinamis (seluruh Indonesia): {len(tables)}")
+    print(tables.head(10))
+    tables.to_csv("bps_dynamictable_all.csv", index=False)
+    print("\nDisimpan ke bps_dynamictable_all.csv")
+    print("Kolom yang tersedia:", tables.columns.tolist())
 
-    keywords = ["penduduk", "PDRB", "usaha", "UMKM", "miskin", "pengeluaran", "ekonomi"]
+    # Cari kolom judul
     title_col = None
     for col in tables.columns:
-        if "title" in col.lower() or "subj" in col.lower():
+        if "title" in col.lower():
             title_col = col
             break
 
-    if title_col:
-        print(f"\n=== Filter indikator relevan (kata kunci: {keywords}) ===")
-        pattern = "|".join(keywords)
-        relevant = tables[tables[title_col].astype(str).str.contains(pattern, case=False, na=False)]
-        print(relevant)
-        relevant.to_csv("bps_dynamictable_relevan.csv", index=False)
-        print(f"\nDitemukan {len(relevant)} tabel relevan -> disimpan ke bps_dynamictable_relevan.csv")
-    else:
-        print("Kolom judul tabel tidak ditemukan, cek manual kolom berikut:")
-        print(tables.columns.tolist())
+    if title_col is None:
+        print("\nKolom judul tidak ditemukan otomatis, cek manual kolom di atas.")
+        sys.exit(0)
+
+    print(f"\n=== Filter indikator relevan (kata kunci: {KEYWORDS}) ===")
+    pattern = "|".join(KEYWORDS)
+    relevant = tables[tables[title_col].astype(str).str.contains(pattern, case=False, na=False)]
+    print(f"Ditemukan {len(relevant)} tabel relevan dari total {len(tables)}")
+    print(relevant[[title_col]].drop_duplicates().head(50))
+    relevant.to_csv("bps_dynamictable_relevan.csv", index=False)
+    print("\nDisimpan ke bps_dynamictable_relevan.csv")
 
 
 if __name__ == "__main__":
