@@ -1,0 +1,34 @@
+name: Scrape Google Maps Distributor
+
+# Jalankan manual dari tab "Actions" -> pilih workflow ini -> "Run workflow"
+on:
+  workflow_dispatch:
+
+jobs:
+  scrape-gmaps:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Buat folder output
+        run: mkdir -p gmaps-output
+
+      - name: Jalankan Google Maps Scraper via Docker
+        run: |
+          docker run \
+            -v gmaps-playwright-cache:/opt \
+            -v "$PWD/queries.txt:/queries.txt:ro" \
+            -v "$PWD/gmaps-output:/out" \
+            gosom/google-maps-scraper \
+            -input /queries.txt \
+            -results /out/results.csv \
+            -depth 1 \
+            -exit-on-inactivity 3m
+
+      - name: Upload hasil sebagai artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: gmaps-distributor-results
+          path: gmaps-output/results.csv
