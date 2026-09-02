@@ -39,7 +39,8 @@ except ImportError:
 
 BPS_TOKEN = os.environ.get("BPS_TOKEN")
 
-DATA_URL = "https://webapi.bps.go.id/v1/api/list/model/data/domain/{domain}/var/{var}/key/{key}/"
+TH_URL = "https://webapi.bps.go.id/v1/api/list/model/th/domain/{domain}/var/{var}/key/{key}/"
+DATA_URL = "https://webapi.bps.go.id/v1/api/list/model/data/domain/{domain}/var/{var}/th/{th}/key/{key}/"
 
 # (domain, var_id, label_untuk_file)
 TARGETS = [
@@ -59,8 +60,18 @@ TARGETS = [
 ]
 
 
-def fetch_data(domain, var):
-    url = DATA_URL.format(domain=domain, var=var, key=BPS_TOKEN)
+def fetch_th_list(domain, var):
+    url = TH_URL.format(domain=domain, var=var, key=BPS_TOKEN)
+    try:
+        resp = requests.get(url, timeout=30)
+        resp.raise_for_status()
+        return resp.json()
+    except Exception as e:
+        return {"error": str(e)}
+
+
+def fetch_data(domain, var, th):
+    url = DATA_URL.format(domain=domain, var=var, th=th, key=BPS_TOKEN)
     try:
         resp = requests.get(url, timeout=30)
         resp.raise_for_status()
@@ -77,12 +88,33 @@ def main():
     all_results = {}
 
     for domain, var, label in TARGETS:
-        print(f"=== Mengambil {label} (domain={domain}, var={var}) ===")
-        result = fetch_data(domain, var)
-        all_results[label] = {"domain": domain, "var": var, "result": result}
+        print(f"=== {label} (domain={domain}, var={var}) ===")
 
-        status = result.get("data-availability", result.get("status", "unknown"))
-        print(f"  Status: {status}")
+        # 1. Cari daftar periode/tahun yang tersedia
+        th_result = fetch_th_list(domain, var)
+        th_list = th_result.get("data") if isinstance(th_result, dict) else None
+
+        chosen_th = None
+        if isinstance(th_list, list) and len(th_list) > 1 and isinstance(th_list[1], list) and len(th_list[1]) > 0:
+            available = th_list[1]
+            chosen_th = available[-1].get("th_id")
+            print(f"  Periode tersedia: {len(available)}, pakai th_id={chosen_th} ({available[-1].get('th')})")
+        else:
+            print(f"  Gagal dapat daftar periode: {th_result}")
+
+        # 2. Ambil data pakai th yang dipilih
+        if chosen_th:
+            data_result = fetch_data(domain, var, chosen_th)
+        else:
+            data_result = {"error": "th tidak ditemukan"}
+
+        all_results[label] = {
+            "domain": domain, "var": var, "th_used": chosen_th,
+            "th_list_raw": th_result, "data_result": data_result,
+        }
+
+        has_data = isinstance(data_result, dict) and "data" in data_result
+        print(f"  Data: {'OK' if has_data else 'GAGAL'}")
         time.sleep(1)
 
     with open("bps_final_data_raw.json", "w", encoding="utf-8") as f:
@@ -91,9 +123,9 @@ def main():
 
     print("\n=== RINGKASAN ===")
     for label, entry in all_results.items():
-        result = entry["result"]
-        has_data = isinstance(result, dict) and "data" in result
-        print(f"  {label}: {'OK' if has_data else 'GAGAL/KOSONG'}")
+        data_result = entry["data_result"]
+        has_data = isinstance(data_result, dict) and "data" in data_result
+        print(f"  {label}: {'OK (th=' + str(entry['th_used']) + ')' if has_data else 'GAGAL/KOSONG'}")
 
 
 if __name__ == "__main__":
