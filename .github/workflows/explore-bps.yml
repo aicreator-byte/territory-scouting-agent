@@ -44,6 +44,11 @@ jobs:
           BPS_TOKEN: ${{ secrets.BPS_TOKEN }}
         run: python3 05_fetch_vars_jakarta_depok.py
 
+      - name: Run BPS fetch vars provinsi untuk PDRB (tahap 6)
+        env:
+          BPS_TOKEN: ${{ secrets.BPS_TOKEN }}
+        run: python3 06_fetch_vars_provinsi_pdrb.py
+
       - name: Upload hasil sebagai artifact
         uses: actions/upload-artifact@v4
         with:
@@ -59,3 +64,5 @@ jobs:
             bps_var_3600_relevan.csv
             bps_var_jakarta_depok_all.csv
             bps_var_jakarta_depok_relevan.csv
+            bps_var_provinsi_all.csv
+            bps_var_provinsi_pdrb.csv
