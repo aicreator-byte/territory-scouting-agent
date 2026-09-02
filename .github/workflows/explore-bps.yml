@@ -49,6 +49,11 @@ jobs:
           BPS_TOKEN: ${{ secrets.BPS_TOKEN }}
         run: python3 06_fetch_vars_provinsi_pdrb.py
 
+      - name: Run BPS fetch data final (tahap 7 - angka aktual)
+        env:
+          BPS_TOKEN: ${{ secrets.BPS_TOKEN }}
+        run: python3 07_fetch_final_data.py
+
       - name: Upload hasil sebagai artifact
         uses: actions/upload-artifact@v4
         with:
@@ -66,3 +71,4 @@ jobs:
             bps_var_jakarta_depok_relevan.csv
             bps_var_provinsi_all.csv
             bps_var_provinsi_pdrb.csv
+            bps_final_data_raw.json
