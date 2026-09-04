@@ -1,0 +1,55 @@
+name: Scrape Google Maps Grid Geografis
+
+# Jalankan manual dari tab "Actions" -> pilih workflow ini -> "Run workflow"
+on:
+  workflow_dispatch:
+
+jobs:
+  scrape-grid:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        area:
+          - { nama: "kab-pandeglang", lat: -6.3049, lon: 106.1091 }
+          - { nama: "kab-lebak", lat: -6.5620, lon: 106.2480 }
+          - { nama: "kab-tangerang", lat: -6.2635, lon: 106.5544 }
+          - { nama: "kab-serang", lat: -6.1216, lon: 106.1523 }
+          - { nama: "kota-tangerang", lat: -6.1783, lon: 106.6319 }
+          - { nama: "kota-cilegon", lat: -6.0025, lon: 105.9887 }
+          - { nama: "kota-serang", lat: -6.1149, lon: 106.1503 }
+          - { nama: "kota-tangsel", lat: -6.2884, lon: 106.7183 }
+          - { nama: "jakarta-selatan", lat: -6.2615, lon: 106.8106 }
+          - { nama: "jakarta-timur", lat: -6.2250, lon: 106.9004 }
+          - { nama: "jakarta-pusat", lat: -6.1805, lon: 106.8284 }
+          - { nama: "jakarta-barat", lat: -6.1352, lon: 106.7576 }
+          - { nama: "jakarta-utara", lat: -6.1214, lon: 106.8859 }
+          - { nama: "depok", lat: -6.4025, lon: 106.7942 }
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Buat folder output
+        run: mkdir -p grid-output
+
+      - name: Scrape grid untuk ${{ matrix.area.nama }}
+        run: |
+          docker run \
+            -v gmaps-playwright-cache:/opt \
+            -v "$PWD/generic_queries.txt:/queries.txt:ro" \
+            -v "$PWD/grid-output:/out" \
+            gosom/google-maps-scraper \
+            -input /queries.txt \
+            -results /out/grid_${{ matrix.area.nama }}.csv \
+            -geo "${{ matrix.area.lat }},${{ matrix.area.lon }}" \
+            -radius 15000 \
+            -depth 5 \
+            -exit-on-inactivity 3m
+
+      - name: Upload hasil sebagai artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: grid-${{ matrix.area.nama }}
+          path: grid-output/grid_${{ matrix.area.nama }}.csv
